@@ -1,0 +1,137 @@
+---
+title: "Penalised Gibbs Estimation: Example (v.1.0)"
+author: "Tuomas Rajala"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Example 6-variate}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Introduction
+This document provides demonstrates the use of the R-package `PenGE` for estimating significant interactions in a multivariate Gibbs model using Group Lasso automatic variable selection. 
+
+
+Start by making sure required packages are installed:
+
+```{r, results=FALSE}
+library(PenGE)
+library(spatstat)
+```
+
+
+## Data
+Let's see if we can discover interactions in 6-variate `lansing` data set.
+
+```{r, fig.width=7, fig.height=6}
+data(lansing)
+plot(split(lansing), cex=.5)
+```
+
+## Fitting the model
+The data is $p=6$ variate point pattern. 
+
+### Bare minimum
+
+The bare minimum is to define the interaction ranges:
+
+```{r}
+p <- 6 # we have six species
+rv <- c(0.025, 0.05) # use these for everything
+r1 <- rep( list(rv) , p) # intra-type interaction ranges
+r2 <- rep( list(rv), p * (p-1)/2) # inter-type
+```
+
+Then we need to compute the logistic regression pseudo-likelihood model matrix.
+
+```{r, cache=TRUE}
+Q <- make_Q_stepper_multi(x=lansing, ranges1 = r1, ranges2 = r2, border_r = 0.05)
+```
+
+Then we can estimate the parameters with group lasso (no Cross validation):
+
+```{r, cache=TRUE}
+fit <- fitGlbin_CV(Q)
+```
+
+We can look at the AIC path to get an idea if the model fits at all:
+
+```{r}
+with(fit$fullfit, plot(lambda , aic, xlim = rev(range(lambda) )))
+```
+
+Get the estimated interaction matrix, with signs. Default penalty level (when param `k` is not set) is ad-hoc rule-of-thumb: half-way between max. penalty and AIC minimum. 
+
+```{r, fig.width = 6, fig.height=6}
+M <- imatrix(fit, signed = TRUE)
+image.imatrix(M, col = c("red","black","green"), cex.axis = 0.7)
+```
+
+Use CV to more objectively choose the penalty level.
+
+### Cross validation
+For cross validation we split the pattern into parts spatially. In order to have truly spatially independent datasets, we need to use eroded windows. This in turn leads to a loss of data. Let's accept 50% loss. How many quadrats can we have?
+
+```{r}
+r_border <- 0.05
+win_side_len <- 1
+nmax <- cv_border_solve_split(R_frac = r_border/win_side_len, acceptable_loss = 0.5)
+nx <- round( sqrt(nmax) )
+quads <- split_window(lansing$window, nx = nx, ny = nx)
+```
+
+Check split:
+```{r, fig.width=6, fig.height=6}
+plot(unmark(lansing), cex=.3)
+for(q in quads) plot(erosion(w = q, r = r_border), add=T, fg=2)
+```
+
+Not that many. We can increase `nx` but at the cost of introducing correlation in the CV estimates. 
+
+
+Next we need to fit the model again, this time several times for the different subsets. Current implementation uses `mclapply` from ``parallel` (adjust `mc.cores` to your resources):
+
+```{r, cache=TRUE}
+cvfit <- fitGlbin_CV(Q, quads = quads, mc.cores = 5)
+```
+
+Then we compute CV Risk as average of the quadrats' squared-residual sums. For Gibbs models, different residuals are available. Lots of numerical computations are hidden here, but by default something sensible should emerge. One can for example set at `dum_grid_dimyx = c(30,30)` :
+
+
+```{r, cache=TRUE}
+Rest <- residuals_cv(cvfit, x = lansing, mc.cores = 6)
+```
+
+The individual residual curves per CV-fit and the *inverse*-residual:
+
+```{r, fig.width=7, fig.height=3}
+inv <- Rest$by_resid$inverse
+pen <- cvfit$lambda 
+
+par(mfrow=c(1,2))
+
+# The residual per penalty for each CV quadrat
+plot(pen, inv[1,], "l", xlim = rev(range(pen)), ylim=range(inv))
+for(i in 2:nx^2) lines(pen, inv[i,], col=i)
+# Estimated Risk:
+risk_inv <- Rest$ave$inverse
+plot(pen, log(risk_inv), "l", xlim = rev(range(pen)))
+```
+
+The CV-risk optimal interaction matrix:
+
+```{r, fig.width = 6, fig.height=6}
+kopt <- which.min(risk_inv)
+Mcv <- imatrix(cvfit, k = kopt, signed = TRUE)
+image.imatrix(Mcv, cols = c(2,1,3), cex=.7)
+```
+
+
+
+## Further options
+
+### Covariates
+
+
+

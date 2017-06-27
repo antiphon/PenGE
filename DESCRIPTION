@@ -1,0 +1,16 @@
+Package: PenGE
+Type: Package
+Title: Penalised Gibbs Estimation
+Version: 0.1.0
+Author: Tuomas Rajala
+Maintainer: Tuomas Rajala <tuomas.rajala@iki.fi>
+Description: Fit multivariate point pattern Gibbs models using penalised pseudo-likelihoods.
+License: GPL
+Encoding: UTF-8
+LazyData: true
+Imports: Rcpp (>= 0.12.10)
+LinkingTo: Rcpp
+Suggests: knitr,
+    rmarkdown
+VignetteBuilder: knitr
+RoxygenNote: 6.0.1

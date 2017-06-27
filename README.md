@@ -1,17 +1,20 @@
 # PenGE
 Penalised Gibbs model Estimation
 
-Depends on a few packages, run.
+
+## Installing
+
+Depends on other packages. Installation:
 
 ```
-devtools::install_packages("antiphon/glbinc")
-devtools::install_packages("antiphon/looptimer")
-devtools::install_packages("antiphon/rgeyer")
+devtools::install_github("antiphon/glbinc")
+devtools::install_github("antiphon/looptimer")
+devtools::install_github("antiphon/rgeyer")
 
 ```
 
-and the
+Package includes a vignette, which can be accessed by installing the package thusly:
 
 ```
-devtools::install_packages("antiphon/PenGE")
+devtools::install_github("antiphon/PenGE", build_vignettes = TRUE)
 ```

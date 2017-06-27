@@ -66,7 +66,7 @@ imatrix <- function(fit, k = NULL, group_criteria = any, signed = FALSE){
 #' @export
 image.imatrix <- function(x, cols = c("black", "white"), ...) {
   p <- ncol(x)
-  image(1:p, 1:p, x, ann=F, axes=F, asp=1, col = cols)
+  image(1:p, 1:p, x, ann=F, axes=F, asp=1, col = cols, ...)
   axis(1, 1:p, rownames(x), ...)
   axis(2, 1:p, rownames(x), ...)
 }

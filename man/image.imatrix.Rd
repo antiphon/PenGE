@@ -4,7 +4,7 @@
 \alias{image.imatrix}
 \title{Image for imatrix}
 \usage{
-image.imatrix(x, cols = c("black", "white"), ...)
+image.imatrix(x, cols = c("black", "white"), zlim = c(-1, 1), ...)
 }
 \arguments{
 \item{x}{imatrix}

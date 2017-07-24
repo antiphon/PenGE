@@ -13,9 +13,9 @@ make_Q_stepper_multi(x, ranges1, ranges2, sat1 = 1, sat2 = 1,
 \arguments{
 \item{x}{Point pattern data, preferrably a ppp-object. Say of p-types.}
 
-\item{ranges1}{Intra-type ranges, p vectors}
+\item{ranges1}{Intra-type ranges, p vectors in a list}
 
-\item{ranges2}{Inter-type ranges, p*(p-1)/2 vectors}
+\item{ranges2}{Inter-type ranges, p*(p-1)/2 vectors in a list}
 
 \item{sat1}{Intra-type saturations, vectors (for Saturation model)}
 

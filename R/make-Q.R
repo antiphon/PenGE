@@ -3,8 +3,8 @@
 #' Construct the model matrix of multi-level multi-variate saturation model for penalised logistic regression pseudo-likelihood.
 #'
 #' @param x Point pattern data, preferrably a ppp-object. Say of p-types.
-#' @param ranges1 Intra-type ranges, p vectors
-#' @param ranges2 Inter-type ranges, p*(p-1)/2 vectors
+#' @param ranges1 Intra-type ranges, p vectors in a list
+#' @param ranges2 Inter-type ranges, p*(p-1)/2 vectors in a list
 #' @param sat1 Intra-type saturations, vectors (for Saturation model)
 #' @param sat2 Inter-type saturations, vectors (for Saturation model)
 #' @param sat1l More particular sat1, matrices (for Saturation model)

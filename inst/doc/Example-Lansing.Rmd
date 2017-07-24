@@ -207,15 +207,15 @@ Qc <- make_Q_stepper_multi(x=lansing, ranges1 = r1, ranges2 = r2, border_r = 0.0
 
 Note that we choose not to penalise the covariates. Group lasso shrinks the estimates, and if we penalise the covariates this might lead to problems in the residual estimation (=prediction). This needs to be studied further. 
 
-Then we proceed as before, with the expection that the covariates need to be given explicitly to `residuals_cv`:
-
+Then we proceed as before:
 
 ```{r}
 cvfit_c <- fitGlbin_CV(Qc, quads = quads, mc.cores = 5)
 Rc <- residuals_cv(cvfit_c, x = lansing, mc.cores = 5, covariates = covs)
 ```
 
-We can extract the covariate coefficients thusly:
+Note that the covariates need to be given explicitly to `residuals_cv`.
+
 
 ```{r}
 kopt_c <- which.min(Rc$ave$inverse)
@@ -223,7 +223,7 @@ cov_est <- covariate_matrix(cvfit_c, k = kopt_c, pref = "cov")
 print(cov_est, digits=2)
 ```
 
-Confidence intervals of these estimates are not available. `pref="cov"` gives the prefix for string matching the covariate coefficients (avoid names with `_`, `intra` and `ìnter_`). 
+Confidence intervals of these estimates are not available.
 
 
 

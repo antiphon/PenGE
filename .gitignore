@@ -5,4 +5,8 @@
 src/*.o
 src/*.so
 src/*.dll
-inst/doc
+vignettes/*_cache
+vignettes/*_files
+
+
+

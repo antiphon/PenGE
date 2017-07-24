@@ -128,7 +128,9 @@ residuals_cv <- function(fit, x,
   #
   # done
   Rest
-  list(ave=Rest, by_resid = Rk, counts = counts, res_by_type = res_by_type)
+  out <- list(ave=Rest, by_resid = Rk, counts = counts, res_by_type = res_by_type)
+  class(out) <- c("cvresiduals")
+  out
 }
 
 

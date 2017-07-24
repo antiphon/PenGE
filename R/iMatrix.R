@@ -9,9 +9,9 @@
 imatrix <- function(fit, k = NULL, group_criteria = any, signed = FALSE){
   # If CV wrapper given
   if(!is.null(fit$fullfit)){
+    types <- fit$datainfo$types
     fit0 <- fit
     fit <- fit0$fullfit
-    types <- fit0$datainfo$types
   }
   else{
     types <- NULL # TODO: parse
@@ -64,9 +64,9 @@ imatrix <- function(fit, k = NULL, group_criteria = any, signed = FALSE){
 #' Colors for signed: (-1,0,1,2)
 #'
 #' @export
-image.imatrix <- function(x, cols = c("black", "white"), ...) {
+image.imatrix <- function(x, cols = c("black", "white"), zlim = c(-1,1), ...) {
   p <- ncol(x)
-  image(1:p, 1:p, x, ann=F, axes=F, asp=1, col = cols, ...)
+  image(1:p, 1:p, x, ann=F, axes=F, asp=1, col = cols, zlim = zlim, ...)
   axis(1, 1:p, rownames(x), ...)
   axis(2, 1:p, rownames(x), ...)
 }
@@ -82,20 +82,27 @@ sign_it <- function(v) {
 
 #' Covariate estimate Matrix
 #'
-#'
-covariate_matrix <- function(fit, pref="covariate") {
+#' @export
+covariate_matrix <- function(fit, k=NULL, pref="covariate") {
+  if(!is.null(fit$fullfit)){
+    fit0 <- fit
+    fit <- fit0$fullfit
+  }
   beta <- fit$beta
+  if(is.null(k)) k <- round(0.5 * which.min(fit$aic[!is.na(fit$aic)]))
   idxc <- grep(pref, rownames(beta))
   if(length(idxc)==0) return(NULL)
   nan <- rownames(beta)[idxc]
   # split by cov type
-  covn <- unique(gsub("_[0-99,A-Z]*$", "",nan))
+  covn <- unique(gsub("_[0-99,a-z,A-Z]*$", "",nan))
+  types <- unique(gsub(paste0(c(covn, "_"), collapse="|"), "", nan))
   tab <- NULL
   for(cn in covn) tab <- rbind(tab, beta[idxc[grep(cn, nan)]]   )
   rownames(tab) <- covn
-  colnames(tab) <- gsub("[^0-99,A-Z]", "", colnames(tab))
+  colnames(tab) <- types #gsub("[^0-99,a-z,A-Z]", "", colnames(tab))
   tab
 }
+
 
 #
 # covmatrix_from_out <- function(out) {

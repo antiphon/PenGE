@@ -29,7 +29,7 @@
 #'
 #'
 #' @return
-#' A list suitable for inputting to penLogi-function
+#' A list suitable for inputting to the fitGlbin_CV function
 #'
 #'
 #' @import spatstat Matrix rgeyer

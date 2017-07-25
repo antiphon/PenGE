@@ -6,6 +6,10 @@ library(spatstat)
 #  library(PenGE)
 #  library(spatstat)
 
+## ------------------------------------------------------------------------
+library(parallel)
+MCORES <- pmax(1, detectCores() - 1) # use all but one core
+
 ## ---- fig.width=7, fig.height=6------------------------------------------
 data(lansing)
 plot(split(lansing), cex=.5)
@@ -18,7 +22,7 @@ r2 <- rep( list(rv), p * (p-1)/2) # inter-type
 
 ## ---- fig.width = 6, fig.height=6----------------------------------------
 M <- imatrix(fit, signed = TRUE)
-image.imatrix(M, col = c("red","black","green","blue"), cex.axis = 0.7)
+image.imatrix(M, col = c("red","black","green","blue"), cex.axis = 0.7, zlim = c(-1,2))
 
 ## ---- fig.width = 6, fig.height=6----------------------------------------
 # remove the intercepts which are not penalised, and divide by number of ranges per interaction
@@ -76,8 +80,8 @@ covs <- list(covx = cov1, covy = cov2)
 Qc <- make_Q_stepper_multi(x=lansing, ranges1 = r1, ranges2 = r2, border_r = 0.05, covariates = covs, penalise_covariates = FALSE)
 
 ## ------------------------------------------------------------------------
-cvfit_c <- fitGlbin_CV(Qc, quads = quads, mc.cores = 5)
-Rc <- residuals_cv(cvfit_c, x = lansing, mc.cores = 5, covariates = covs)
+cvfit_c <- fitGlbin_CV(Qc, quads = quads, mc.cores = MCORES)
+Rc <- residuals_cv(cvfit_c, x = lansing, mc.cores = MCORES, covariates = covs)
 
 ## ------------------------------------------------------------------------
 kopt_c <- which.min(Rc$ave$inverse)

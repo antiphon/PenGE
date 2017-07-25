@@ -4,7 +4,7 @@
 \alias{covariate_matrix}
 \title{Covariate estimate Matrix}
 \usage{
-covariate_matrix(fit, pref = "covariate")
+covariate_matrix(fit, k = NULL, pref = "covariate")
 }
 \description{
 Covariate estimate Matrix

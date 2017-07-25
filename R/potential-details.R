@@ -7,6 +7,7 @@
 #' @param j Type 2 index, one of 1, ..., p
 #'
 #' @details The lasso-path coefficients of the interaction parameters between types i and j.
+#'
 #' @export
 potential <- function(fit, i, j, k = NULL) {
   Qpars <- fit$Qpars

@@ -25,6 +25,12 @@ library(PenGE)
 library(spatstat)
 ```
 
+We will use some rudimentary parallelisation from the package `parallel`:
+
+```{r}
+library(parallel)
+MCORES <- pmax(1, detectCores() - 1) # use all but one core
+```
 
 
 ## Data
@@ -67,7 +73,7 @@ Lets take a look at the estimated interaction matrix on the default penalty leve
 
 ```{r, fig.width = 6, fig.height=6}
 M <- imatrix(fit, signed = TRUE)
-image.imatrix(M, col = c("red","black","green","blue"), cex.axis = 0.7)
+image.imatrix(M, col = c("red","black","green","blue"), cex.axis = 0.7, zlim = c(-1,2))
 ```
 
 This matrix shows estimated interactions between the types. Note however, that the matrix can be different for different levels of penalisation. The rule of thumb for selecting the penalty level is not very well justified. For illustration, lets compute the number of interactions per penalty level:
@@ -99,18 +105,18 @@ plot(unmark(lansing), cex=.3, main = "CV quadrats")
 for(q in quads) plot(erosion(w = q, r = r_border), add=T)
 ```
 
-Not that many. We can increase `nx` but at the cost of introducing correlation in the CV estimates. It remains an open question how bad, if any, such correlation affects the estimation.
+Not that many. We can increase `nx` but at the cost of introducing correlation in the CV estimates. It remains an open question how badly such correlation affects the estimation.
 
-Now we need to fit the model for each different quadrat subset. Current implementation uses `mclapply` from `parallel` to run the fitting locally parallel. This will take a moment (adjust `mc.cores` to suit your resources):
+Now we need to fit the model for each different quadrat subset. Current implementation simply uses `mclapply` from `parallel` to run locally parallelised. This will take a moment:
 
 ```{r, cache=TRUE}
-cvfit <- fitGlbin_CV(Q, quads = quads, mc.cores = 5)
+cvfit <- fitGlbin_CV(Q, quads = quads, mc.cores = MCORES)
 ```
 
 Next we need to compute the cross validation risk, i.e. a prediction error per penalty level. This is given by the average of the quadrats' squared-residual sums. Unlike the data-minus-prediction -residual for linear models, several different residuals are available for Gibbs models. 
 
 ```{r, cache=TRUE}
-Rest <- residuals_cv(cvfit, x = lansing, mc.cores = 5)
+Rest <- residuals_cv(cvfit, x = lansing, mc.cores = MCORES)
 ```
 
 By default something sensible should emerge. Several numerical approximations are needed in the current implementation. One can for example set `dum_grid_dimyx = c(30,30)` to use a quadrature-integration instead of Monte Carlo -integration to approximate the residual integrals.
@@ -153,6 +159,7 @@ The coding for the matrix is as follows when `signed=TRUE`:
 
 If `signed=FALSE`, the matrix is binary with 1 if at least one rance scale coefficient is non-zero.
 
+From the matrix we can see that most types are clustered (positive intra-interaction), and that maple is negatively associated with blackoak and hickory, for example.
 
 ## Further options
 
@@ -211,8 +218,8 @@ Then we proceed as before, with the expection that the covariates need to be giv
 
 
 ```{r}
-cvfit_c <- fitGlbin_CV(Qc, quads = quads, mc.cores = 5)
-Rc <- residuals_cv(cvfit_c, x = lansing, mc.cores = 5, covariates = covs)
+cvfit_c <- fitGlbin_CV(Qc, quads = quads, mc.cores = MCORES)
+Rc <- residuals_cv(cvfit_c, x = lansing, mc.cores = MCORES, covariates = covs)
 ```
 
 We can extract the covariate coefficients thusly:
@@ -223,7 +230,18 @@ cov_est <- covariate_matrix(cvfit_c, k = kopt_c, pref = "cov")
 print(cov_est, digits=2)
 ```
 
-Confidence intervals of these estimates are not available. `pref="cov"` gives the prefix for string matching the covariate coefficients (avoid names with `_`, `intra` and `ìnter_`). 
+Confidence intervals of these estimates are not available. `pref="cov"` gives the prefix for string matching the covariate coefficients (avoid names with  `_`, `intra` and `ìnter`). 
+
+
+# Note
+
+The estimation is based on an approximation of the model likelihood. The approximation is based on an auxiliary random mechanism (see `make_Q_stepper_multi` parameters regarding dummy points). Therefore, there will be a level of variability between different fits of the model even if the data and the model are kept same. 
+
+This means that the estimates are correct penalised maximum likelihood estimates **on average**. 
+
+It is highly recommended to fit the model more than once and compare/average the outputs.
+
+
 
 
 

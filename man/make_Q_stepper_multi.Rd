@@ -54,7 +54,7 @@ make_Q_stepper_multi(x, ranges1, ranges2, sat1 = 1, sat2 = 1,
 \item{border_r}{Border correction range.}
 }
 \value{
-A list suitable for inputting to penLogi-function
+A list suitable for inputting to the fitGlbin_CV function
 }
 \description{
 Construct the model matrix of multi-level multi-variate saturation model for penalised logistic regression pseudo-likelihood.

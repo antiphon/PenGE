@@ -9,6 +9,8 @@ library(spatstat)
 ## ------------------------------------------------------------------------
 library(parallel)
 MCORES <- pmax(1, detectCores() - 1) # use all but one core
+# Windows doesn't support forking
+if(.Platform$OS.type == "windows") MCORES <- 1
 
 ## ---- fig.width=7, fig.height=6------------------------------------------
 data(lansing)

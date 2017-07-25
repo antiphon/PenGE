@@ -82,7 +82,9 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <span class="kw">library</span>(spatstat)</code></pre></div>
 <p>We will use some rudimentary parallelisation from the package <code>parallel</code>:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(parallel)
-MCORES &lt;-<span class="st"> </span><span class="kw">pmax</span>(<span class="dv">1</span>, <span class="kw">detectCores</span>() -<span class="st"> </span><span class="dv">1</span>) <span class="co"># use all but one core</span></code></pre></div>
+MCORES &lt;-<span class="st"> </span><span class="kw">pmax</span>(<span class="dv">1</span>, <span class="kw">detectCores</span>() -<span class="st"> </span><span class="dv">1</span>) <span class="co"># use all but one core</span>
+<span class="co"># Windows doesn't support forking</span>
+if(.Platform$OS.type ==<span class="st"> &quot;windows&quot;</span>) MCORES &lt;-<span class="st"> </span><span class="dv">1</span></code></pre></div>
 </div>
 <div id="data" class="section level2">
 <h2>Data</h2>

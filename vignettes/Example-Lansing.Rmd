@@ -30,6 +30,8 @@ We will use some rudimentary parallelisation from the package `parallel`:
 ```{r}
 library(parallel)
 MCORES <- pmax(1, detectCores() - 1) # use all but one core
+# Windows doesn't support forking
+if(.Platform$OS.type == "windows") MCORES <- 1
 ```
 
 

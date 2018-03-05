@@ -10,7 +10,7 @@ vignette: >
 ---
 
 ## Introduction
-This document provides demonstrates the use of the R-package `PenGE` for estimating significant interactions of a multivariate, piece-wise constant saturation Gibbs model using Group Lasso automatic variable selection. 
+This document demonstrates the use of the R-package `PenGE` for estimating significant interactions of a multivariate, piece-wise constant saturation Gibbs model using Group Lasso automatic variable selection. 
 
 
 Start by making sure required packages are installed:

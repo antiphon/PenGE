@@ -19,7 +19,7 @@ cv_border_solve_split <- function(R_frac = 0.02, acceptable_loss = 0.5){
 #' @param nx nx x nx split
 #' @export
 cv_border_expected_loss <- function(R_frac = 0.05, nx = 5) {
-  1-(1-2*R_frac*nx)^2
+  1 - (1 - 2 * R_frac*nx)^2
 }
 
 #' Split Obs Window to Small Windows

@@ -1,10 +1,11 @@
-#' Multivariate Stepper Gibbs Model Pseudolikelihood Design Matrix Generation
+#' Multivariate Spline Gibbs Model Pseudolikelihood Design Matrix Generation
 #'
 #' Construct the model matrix of multi-level multi-variate saturation model for penalised logistic regression pseudo-likelihood.
 #'
 #' @param x Point pattern data, preferrably a ppp-object. Say of p-types.
-#' @param ranges1 Intra-type ranges, p vectors in a list
-#' @param ranges2 Inter-type ranges, p*(p-1)/2 vectors in a list
+#' @param knots1 Intra-type knots, p vectors in a list. Include 0 and max R in each vector.
+#' @param knots2 Inter-type knots, p*(p-1)/2 vectors in a list. Include 0 and max R in each vector.
+#' @param spline_order 3 is cubic, 1 is tents. Default 3.
 #' @param sat1 Intra-type saturations, vectors (for Saturation model)
 #' @param sat2 Inter-type saturations, vectors (for Saturation model)
 #' @param sat1l More particular sat1, matrices (for Saturation model)
@@ -36,8 +37,9 @@
 #' @export
 #'
 #'
-make_Q_stepper_multi <- function(x, # data
-                                 ranges1, ranges2, # spatial range vectors in lists
+make_Q_splines_multi <- function(x, # data
+                                 knots1, knots2, # spatial range vectors in lists
+                                 spline_order = 3,
                                  sat1 = 1, sat2 = 1, sat1l = NULL, sat2l = NULL,# saturation model
                                  auto_sat = TRUE, # set saturation levels based on intensities and ranges
                                  covariates, penalise_covariates = TRUE,
@@ -77,11 +79,12 @@ make_Q_stepper_multi <- function(x, # data
   N <- table(m)
   p <- length(N)
   npairs <- p*(p-1)/2
-  rn_intra <- sapply(ranges1, length)
+  rn_intra <- sapply(knots1, length) + spline_order - 1 # number of basis functions
+  # some checks
+  if(p != length(rn_intra)) stop("knots1 length does not match found types.")
+  #
   p_intra <- sum(rn_intra)
   cs_intra <- c(0, cumsum(rn_intra))
-  # some checks
-  if(p != length(rn_intra)) stop("ranges1 length does not match found types.")
   #
   # dummy intensities
   # limit
@@ -150,7 +153,7 @@ make_Q_stepper_multi <- function(x, # data
     if(auto_sat){
       if(sat1l_given) sats <- sat1l[[i]]
       else {
-        dr2 <- diff(c(0, ranges1[[i]])^2)
+        dr2 <- diff(seq(0, max(knots1[[i]]), l = rn_intra[i]+1)^2)
         sats <- pmax(1, qpois(.99, dr2 * pi * nrow(x_i)/V))
       }
     }
@@ -159,9 +162,11 @@ make_Q_stepper_multi <- function(x, # data
       else sats <- rep(sat1, rn_intra[i]) # just a constant
     }
     # components: data to data
-    xk <- stepper_components(x_i, to = NULL, r=ranges1[[i]], sat = sats, bbox = bbox, ...)
+    xk <- splines_components(x_i, to = NULL, knots = knots1[[i]], sat = sats, bbox = bbox, p = spline_order, ...)
+    #xk <- stepper_components(x_i, to = NULL, r=knots1[[i]], sat = sats, bbox = bbox, ...)
     # data to dummy
-    dk <- stepper_components(x_i, d_i, r=ranges1[[i]], sat = sats, bbox = bbox, ...)
+    dk <- splines_components(x_i, to = d_i,  knots = knots1[[i]], sat = sats, bbox = bbox, p = spline_order, ...)
+    #dk <- stepper_components(x_i, d_i, r=knots1[[i]], sat = sats, bbox = bbox, ...)
     #
     # Covariates
     if(ncovs) {
@@ -220,11 +225,11 @@ make_Q_stepper_multi <- function(x, # data
     k <- 1
     cat2("Inter components:\n")
     # some useful numbers
-    rn_inter <- sapply(ranges2, length)
+    rn_inter <- sapply(knots2, length) + spline_order - 1
     p_inter <- sum(rn_inter)
     cs_inter <- c(0, cumsum(rn_inter))
     # check
-    if(npairs != length(rn_inter)) stop("n. of pairs does not length of ranges2")
+    if(npairs != length(rn_inter)) stop("n. of pairs does not length of knots2")
     # extend the data frame
     Xdf <- cbind(Xdf, Matrix(0, nrow=nrow(Xdf), ncol=p_inter, sparse=TRUE))
     for(i in 1:(p-1)) {
@@ -246,8 +251,10 @@ make_Q_stepper_multi <- function(x, # data
           # just a constant
           sats <- rep(sat2, rn_inter[k])
           # symmetric c's from i->j and j->i
-          xk <- stepper_biv_components(xij, to = NULL, r=ranges2[[k]], sat = sats, bbox = bbox, ...)
-          dk <- stepper_biv_components(xij, to =  dij, r=ranges2[[k]], sat = sats, bbox = bbox, ...)
+          #xk <- stepper_biv_components(xij, to = NULL, r=ranges2[[k]], sat = sats, bbox = bbox, ...)
+          #dk <- stepper_biv_components(xij, to =  dij, r=ranges2[[k]], sat = sats, bbox = bbox, ...)
+          xk <- splines_biv_components(xij, to = NULL, knots = knots2[[k]], sat = sats, bbox = bbox, p = spline_order,...)
+          dk <- splines_biv_components(xij, to =  dij, knots = knots2[[k]], sat = sats, bbox = bbox, p = spline_order,...)
           sats <- cbind(ij=sats, ji=sats)
         }
         else{
@@ -257,17 +264,18 @@ make_Q_stepper_multi <- function(x, # data
             sats_ji <- sats[,2]
           }
           else{
-            dr2 <- diff(c(0, ranges2[[k]])^2)
+            dr2 <- diff(seq(0, max(knots2[[i]]), l = rn_inter[i]+1)^2)
             sats_ij <- pmax(1, qpois(.99, dr2 * pi * nrow(x_j)/V))
             sats_ji <- pmax(1, qpois(.99, dr2 * pi * nrow(x_i)/V))
           }
           sats_same <- all(sats_ij == sats_ji)
           # need to compute in two steps if different:
-          xk_ij <- stepper_biv_components(xij, to = NULL, r=ranges2[[k]], sat = sats_ij, bbox = bbox, ...)
-          xk_ji <- if(sats_same) xk_ij else stepper_biv_components(xij, to = NULL, r=ranges2[[k]], sat = sats_ji, bbox = bbox, ...)
-          # dummies, same story
-          dk_ij <- stepper_biv_components(xij, dij, r=ranges2[[k]], sat = sats_ij, bbox = bbox, ...)
-          dk_ji <- if(sats_same) dk_ij else stepper_biv_components(xij, dij, r=ranges2[[k]], sat = sats_ji, bbox = bbox, ...)
+          xk_ij <-    splines_biv_components(xij, to = NULL, knots = knots2[[k]], sat = sats_ij, bbox = bbox, p = spline_order, ...)
+          dk_ij <-    splines_biv_components(xij, to = dij,  knots = knots2[[k]], sat = sats_ij, bbox = bbox, p = spline_order, ...)
+          xk_ji <- if(sats_same) xk_ij
+                 else splines_biv_components(xij, to = NULL, knots = knots2[[k]], sat = sats_ji, bbox = bbox, p = spline_order, ...)
+          dk_ji <- if(sats_same) dk_ij
+                 else splines_biv_components(xij, to = dij,  knots = knots2[[k]], sat = sats_ji, bbox = bbox, p = spline_order, ...)
           # collect right bits
           xk <- rbind(xk_ij[1:N[i],, drop=FALSE],  xk_ji[ N[i]+1:N[j],, drop=FALSE])
           dk <- rbind(dk_ij[1:Nd[i],, drop=FALSE], dk_ji[Nd[i]+1:Nd[j],, drop=FALSE])
@@ -342,8 +350,9 @@ make_Q_stepper_multi <- function(x, # data
   pars <- list()
   pars$border_r <- border_r
   pars$bbox <- bbox
-  pars$ranges1 <- ranges1
-  pars$ranges2 <- ranges2
+  pars$knots1 <- knots1
+  pars$knots2 <- knots2
+  pars$spline_order <- spline_order
   pars$sat1 <- sat1l
   pars$sat2 <- sat2l
   pars$auto_sat <- auto_sat
@@ -352,7 +361,7 @@ make_Q_stepper_multi <- function(x, # data
   pars$dum_max <- dum_max
   pars$rho_factor  <- rho_factor
   pars$ncovariates <- ncovs
-  pars$type <- "stepper"
+  pars$type <- "splines"
   out$parameters <- pars
   #
   # all locations?

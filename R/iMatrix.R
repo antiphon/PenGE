@@ -17,7 +17,8 @@ imatrix <- function(fit, k = NULL, group_criteria = any, signed = FALSE){
     types <- NULL # TODO: parse
   }
   # determine the penalised
-  idx <- fit$index
+  idx <- fit$index_out
+  if(is.null(idx)) idx <- fit$index # old version 1
   # if k=NULL, use 0.5AIC
   if(is.null(k)) k <- round(0.5 * which.min(fit$aic[!is.na(fit$aic)]))
   #

@@ -8,7 +8,8 @@ residuals_cv <- function(fit, x,
                          dum_min = 1000, dum_max = 5*dum_min, rho_factor = 10,
                          dum_grid_dimyx = NULL, # in case given use grid dummies
                          verb = FALSE, mc.cores = 1, weight_by_n = FALSE, ...) {
-  if(length(fit$quads) < 1|length(fit$cvfits) < 1) stop("CV fit not detected (fit$quads or fit$cvfits of zero length).")
+  if(length(fit$quads) < 1|length(fit$cvfits) < 1)
+    stop("CV fit not detected (fit$quads or fit$cvfits of zero length).")
   # the lambda
   l <- fit$lambda
   nl <- length(fit$lambda)
@@ -29,7 +30,7 @@ residuals_cv <- function(fit, x,
   bbox <- get_bbox(xpp)
   marks <- parse_marks(xpp)
   pat <- get_coords(xpp)
-  types <- unique(marks)
+  types <- if(is.factor(marks)) levels(marks) else unique(marks)
   pat <- pat[,1:2]
 
   # compute risk over CV splits:
@@ -59,7 +60,7 @@ residuals_cv <- function(fit, x,
       count <- length(m)
       # check if all types present
       z <- unique(m)
-      mis <- setdiff(types,z)
+      mis <- setdiff(types, z)
       # add a point of the missing type to keep data structure intact for downstream computations.
       # add it outisde the window so it will not influence anything.
       for(mi in mis) {
@@ -68,6 +69,7 @@ residuals_cv <- function(fit, x,
         xm$x <- rbind(xm$x, xnew)
         m <- c(m, mi)
       }
+      m <- factor(m)
       # check if grid dummies for integration
       if(!is.null(dum_grid_dimyx)){
         dummies <- dummy_grid(types, nx = dum_grid_dimyx[2], ny = dum_grid_dimyx[1],
@@ -78,15 +80,27 @@ residuals_cv <- function(fit, x,
       }
       #
       # compute new Q in the quad window, idea is to estimate the integral by dummy mean.
-      xpp <- ppp(xm$x[,1], xm$x[,2], marks = m, window = W)
-      Qk <- make_Q_stepper_multi(xpp, ranges1 = Qpars$ranges1, ranges2 = Qpars$ranges2,
-                                 rho_factor = rho_factor,
-                                 auto_sat = Qpars$auto_sat,
-                                 sat1l = Qpars$sat1, sat2l = Qpars$sat2,
-                                 dum_min = dum_min, dum_max = dum_max,
-                                 dummies = dummies,
-                                 save_locations = TRUE,
-                                 ...)
+      xspp <- ppp(xm$x[,1], xm$x[,2], marks = m, window = W, check = FALSE)
+      # check type
+      if(Qpars$type == "splines")
+        Qk <- make_Q_splines_multi(xspp, knots1 = Qpars$knots1, knots2 = Qpars$knots2,
+                                   spline_order = Qpars$spline_order,
+                                   rho_factor = rho_factor,
+                                   auto_sat =  FALSE, #Qpars$auto_sat, FALSE as not real intens.
+                                   sat1l = Qpars$sat1, sat2l = Qpars$sat2,
+                                   dum_min = dum_min, dum_max = dum_max,
+                                   dummies = dummies,
+                                   save_locations = TRUE,
+                                   ...)
+      else #if(type == "stepper")
+        Qk <- make_Q_stepper_multi(xspp, ranges1 = Qpars$ranges1, ranges2 = Qpars$ranges2,
+                                  rho_factor = rho_factor,
+                                  auto_sat = FALSE, #Qpars$auto_sat, FALSE as not real intens.
+                                  sat1l = Qpars$sat1, sat2l = Qpars$sat2,
+                                  dum_min = dum_min, dum_max = dum_max,
+                                  dummies = dummies,
+                                  save_locations = TRUE,
+                                  ...)
       #
       # compute residuals
       res <- resid_by_Q(fitk, Qk, W = erosion.owin(W, Qpars$border_r), ...)
@@ -146,30 +160,34 @@ resid_by_Q <- function(fit, Q, W=NULL, ...) {
   if(is.null(Q$locations)) stop("Q needs to have locations saved (save_locations = TRUE)")
   if(is.null(W))
     W <- as.owin(c( Q$bbox + c(1,-1) * Q$parameters$border_r) ) # border correction!
-  # the prediction points
-  these <- inside.owin(Q$locations[,1], Q$locations[,2], W)
-  # the prediction types
-  types <- unique(Q$locations[these, 3])
   # the estimates
   beta <- fit$beta[, !is.na(fit$aic), drop = FALSE]
   # re-level intercepts to match indicators:
   for(i in seq_along(types)[-1]) beta[i,] <- beta[i,] + beta[1,]
 
+
+  # the prediction points
+  these <- inside.owin(Q$locations[,1], Q$locations[,2], W)
+  isdata <- Q$y[these] == 1
+  mark <- Q$locations[these, 3]
+  # the different prediction types.
+  types <- unique(Q$locations[these, 3])
+
   # compute papangelou
-  lam <- as.matrix(  Q$X[these,] %*% beta  )
+  log_lam <- as.matrix(  Q$X[these,] %*% beta  )
   #
   V <- area(W)
   raw <- inv <- pearson <- NULL
   # Residual per type
   for(i in types) { # per type.
-    lda <- exp(lam[Q$y[these] == 1 & Q$locations[these, 3] == i , , drop = FALSE ])
-    ldu <- exp(lam[Q$y[these] == 0 & Q$locations[these, 3] == i , , drop = FALSE ])
+    lda <- exp(log_lam[ isdata  & mark == i , , drop = FALSE ] ) # at data
+    ldu <- exp(log_lam[!isdata  & mark == i , , drop = FALSE ] ) # at MC integration points
     # raw residuals
-    raw <- rbind(raw, nrow(lda) - apply(ldu, 2, mean) * V)
+    raw <- rbind(raw,                     nrow(lda) - apply(ldu, 2, mean) * V)
     # inverse
-    inv <- rbind(inv, colSums(1/lda) - apply(ldu>0, 2, mean) * V)
+    inv <- rbind(inv,                colSums(1/lda) -   V)
     # pearson
-    pearson <- rbind(pearson, colSums(1/sqrt(lda)) - apply(sqrt(ldu), 2, mean) * V)
+    pearson <- rbind(pearson,  colSums(1/sqrt(lda)) - apply(sqrt(ldu), 2, mean) * V)
   }
   #
   n <- c( table(Q$locations[Q$y == 1, 3]) )
@@ -197,7 +215,7 @@ average_residuals_over_types <- function(res, weight_by_count = FALSE,
   }
   else{
     mf <- function(x) apply(x, 2, mean, trim = trim, na.rm=TRUE)
-    data.frame(raw = mf(res$raw),
+    data.frame(raw     = mf(res$raw),
                inverse = mf(res$inv),
                pearson = mf(res$pearson))
   }

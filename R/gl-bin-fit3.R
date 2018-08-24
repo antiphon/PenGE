@@ -1,6 +1,6 @@
-#' Group Lasso Penalised Logistic Regression Estimation
+#' Group Lasso Penalised Logistic Regression Estimation (v3)
 #'
-#' Uses the simplified LCD
+#' Uses the version 3 of glbinc with orthonormalisation
 #'
 #' @param Q Model object
 #' @param add_intercept Add overall intercept?
@@ -13,6 +13,8 @@
 #' @param quads The cross validation quadrats
 #' @param mc.cores mclapply mc.cores
 #' @param sparse use Sparse Matrix
+#' @param orthonormalise Orthonormalise X before computations?
+#' @param standardize Standardize X before computations? (overriden by orthonormalise)
 #' @param verb Verbosity
 #' @param ... passed on to
 #'
@@ -23,22 +25,25 @@
 #' fits the CV-models as well. Here the mc.cores -parameter is used.
 #'
 #'
-#' @import looptimer glbinc parallel
+#' @import looptimer glbinc3 parallel
 #' @export
 
-fitGlbin_CV <- function(Q,
-                        dfmax = ncol(Q$X) * 1.1,
-                        lambda = NULL,
-                        lambda.min = 0.001,
-                        nlambda = 100,
-                        log_linear_lambda = FALSE,
-                        verb = 0,
-                        add_intercept=TRUE,
-                        quads = NULL,
-                        mc.cores = 3,
-                        sparse = FALSE,
-                        use_glm_in_lmax = TRUE,
-                        ...) {
+fitGlbin3_CV <- function(Q,
+                         dfmax = ncol(Q$X) * 1.1,
+                         lambda = NULL,
+                         lambda.min = 0.001,
+                         nlambda = 100,
+                         log_linear_lambda = FALSE,
+                         verb = 0,
+                         add_intercept=TRUE,
+                         quads = NULL,
+                         mc.cores = 3,
+                         sparse = FALSE,
+                         orthonormalise = TRUE,
+                         standardize = !orthonormalise,
+                         use_glm_in_lmax = TRUE,
+                         maxiter = 10000,
+                         ...) {
 
   # main subset operation here
   ok <- Q$subset
@@ -52,16 +57,31 @@ fitGlbin_CV <- function(Q,
     X <- X[,-1]
     index <- index[-1]
   }
-  #
+
+  if(orthonormalise) {
+    ON <- orthonormalise(X, index)
+    XO <- ON$X
+    standardize <- FALSE
+  }
+  else{
+    if(standardize){
+      OS <- standardize(X)
+      XO <- OS$X
+    }
+    else XO <- X
+  }
+
   # Determine penalty vector
   if(is.null(lambda)){
-    lmax <- glbinc::max_penalty(X, y, index, o, use_glm = use_glm_in_lmax)
+    lmax <- max_penalty(XO, y, index, o, use_glm = use_glm_in_lmax)
     lvec <- seq(lmax, lmax * lambda.min, l = nlambda) # linear
     if(log_linear_lambda) lvec <- exp( seq(log(lmax), log(lmax * lambda.min), l = nlambda ) )
   }
-  else lvec <- sort(lambda, decreasing=TRUE)
+  else {
+    lvec <- sort(lambda, decreasing=TRUE)
+  }
   #
-  fitter <- if(sparse) glbinc::glbin_lcd_c_sparse else glbinc::glbin_lcd_c
+  fitter <- glbinc3::penalised_logreg
   #
   # add the full window as quad #1
   quads <-  append(list(0), quads)
@@ -76,11 +96,16 @@ fitGlbin_CV <- function(Q,
   # function to fit the model in a given window
   fitone <- function(quad){
     z <- if(!is.list(quad)) rep(TRUE, sum(ok)) else !inside.owin(Q$locations[ok,1], Q$locations[ok,2], quad)
-    fit <- fitter(X=X[z,], y=y[z], index = index, offset=o[z],
+    fit <- fitter(X=XO[z,], y=y[z],
+                  index = index,
+                  offset=o[z],
                   lambda = lvec,
                   dfmax = dfmax, verb = verb,
                   add_intercept = add_intercept,
+                  maxit = maxiter,
                   ...)
+    if(orthonormalise) fit$beta <- unorthonormalise(fit$beta, ON)
+    else if (standardize) fit$beta <- unstandardize(fit$beta, cs = OS)
     fit # done
   }
   #
@@ -95,8 +120,14 @@ fitGlbin_CV <- function(Q,
   }
   # done
   # return the results:
-  out <- list(fullfit = fitl[[1]], cvfits = fitl[-1], lambda = lvec, quads = quads[-1],
-          sparse = sparse, Qpars = Q$parameters, cidx = Q$cidx, datainfo = Q$datainfo)
+  out <- list(fullfit = fitl[[1]],
+              cvfits = fitl[-1],
+              quads = quads[-1],
+              lambda = lvec,
+              sparse = sparse,
+              Qpars = Q$parameters,
+              cidx = Q$cidx,
+              datainfo = Q$datainfo)
   class(out) <- c("cvfit", is(out))
   out
 }

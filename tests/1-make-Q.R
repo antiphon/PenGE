@@ -13,7 +13,7 @@ r1 <- rep( list(rv) , p) # intra-type interaction ranges
 r2 <- rep( list(rv), p * (p-1)/2) # inter-type
 Q <- make_Q_stepper_multi(x=x, ranges1 <-r1 , ranges2 <- r2, verb = 1)
 # fit
-fit <-fitGlbin_CV(Q)
+fit <-fitGlbin_CV(Q, verb = 1)
 }
 
 M <- imatrix(fit, signed = TRUE)

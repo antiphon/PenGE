@@ -7,7 +7,7 @@
 \alias{PenGE}
 \title{Penalised Gibbs Estimation}
 \description{
-Penalised Gibbs Estimation
+Fit multivariate point pattern Gibbs models using penalised pseudo-likelihoods.
 }
 \details{
 Estimation of interactions in spatial point patterns using intra- and inter-type interacting Gibbs models.

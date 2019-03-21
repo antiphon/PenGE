@@ -98,7 +98,7 @@ covariate_matrix <- function(fit, k=NULL, pref="covariate") {
   covn <- unique(gsub("_[0-99,a-z,A-Z]*$", "",nan))
   types <- unique(gsub(paste0(c(covn, "_"), collapse="|"), "", nan))
   tab <- NULL
-  for(cn in covn) tab <- rbind(tab, beta[idxc[grep(cn, nan)]]   )
+  for(cn in covn) tab <- rbind(tab, beta[idxc[grep(cn, nan)], k]   )
   rownames(tab) <- covn
   colnames(tab) <- types #gsub("[^0-99,a-z,A-Z]", "", colnames(tab))
   tab

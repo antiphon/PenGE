@@ -92,10 +92,19 @@ residuals_cv <- function(fit, x,
                                    dummies = dummies,
                                    save_locations = TRUE,
                                    ...)
-      else #if(type == "stepper")
+      else if(Qpars$type == "genstepper")
+        Qk <- make_Q_stepper_multi_rmat(xspp, ranges1 = Qpars$ranges1, ranges2 = Qpars$ranges2,
+                                        rho_factor = rho_factor,
+                                        auto_sat = FALSE,
+                                        sat1l = Qpars$sat1, sat2l = Qpars$sat2,
+                                        dum_min = dum_min, dum_max = dum_max,
+                                        dummies = dummies,
+                                        save_locations = TRUE,
+                                        ...)
+      else
         Qk <- make_Q_stepper_multi(xspp, ranges1 = Qpars$ranges1, ranges2 = Qpars$ranges2,
                                   rho_factor = rho_factor,
-                                  auto_sat = FALSE, #Qpars$auto_sat, FALSE as not real intens.
+                                  auto_sat = FALSE,
                                   sat1l = Qpars$sat1, sat2l = Qpars$sat2,
                                   dum_min = dum_min, dum_max = dum_max,
                                   dummies = dummies,
@@ -158,25 +167,28 @@ residuals_cv <- function(fit, x,
 #' @export
 resid_by_Q <- function(fit, Q, W=NULL, ...) {
   if(is.null(Q$locations)) stop("Q needs to have locations saved (save_locations = TRUE)")
+  # the subwindow
   if(is.null(W))
     W <- as.owin(c( Q$bbox + c(1,-1) * Q$parameters$border_r) ) # border correction!
-  # the estimates
+  V <- area(W)
+
+  # the prediction points, data and MC dummies
+  these <- inside.owin(Q$locations[,1], Q$locations[,2], W)
+  isdata <- Q$y[these] == 1
+  mark <- Q$locations[these, 3]
+
+  # the different prediction types.
+  types <- unique(mark)
+
+  # the estimated model coefficients
   beta <- fit$beta[, !is.na(fit$aic), drop = FALSE]
   # re-level intercepts to match indicators:
   for(i in seq_along(types)[-1]) beta[i,] <- beta[i,] + beta[1,]
 
-
-  # the prediction points
-  these <- inside.owin(Q$locations[,1], Q$locations[,2], W)
-  isdata <- Q$y[these] == 1
-  mark <- Q$locations[these, 3]
-  # the different prediction types.
-  types <- unique(Q$locations[these, 3])
-
   # compute papangelou
   log_lam <- as.matrix(  Q$X[these,] %*% beta  )
-  #
-  V <- area(W)
+
+  # start computing residuals.
   raw <- inv <- pearson <- NULL
   # Residual per type
   for(i in types) { # per type.
@@ -206,8 +218,9 @@ average_residuals_over_types <- function(res, weight_by_count = FALSE,
                                          sqrt_weights = FALSE, trim = 0){
   if(trim == 0){
     n <- res$n
-    if(sqrt_weights) n <- sqrt(n)
-    if(weight_by_count) w <- n/sum(n) else w <- 1
+    w <- 1 # the usual is just the sum over types
+    if(sqrt_weights) n <- sqrt(n) # more weight on abundant types, sqrt
+    if(weight_by_count) w <- n/sum(n)
     # total sums over types, weight by point count.
     data.frame(raw = colSums(w * res$raw),
                inverse = colSums(w * res$inv),

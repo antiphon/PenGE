@@ -5,8 +5,8 @@
 \title{Compute Spatial Residuals from CV Fits}
 \usage{
 residuals_cv(fit, x, dum_min = 1000, dum_max = 5 * dum_min,
-  rho_factor = 10, dum_grid_dimyx = NULL, verb = FALSE, mc.cores = 1,
-  weight_by_n = FALSE, ...)
+  rho_factor = 10, dum_grid_dimyx = NULL, verb = FALSE,
+  mc.cores = 1, weight_by_n = FALSE, ...)
 }
 \arguments{
 \item{fit}{cv-fit}

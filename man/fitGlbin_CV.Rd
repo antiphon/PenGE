@@ -4,10 +4,10 @@
 \alias{fitGlbin_CV}
 \title{Group Lasso Penalised Logistic Regression Estimation}
 \usage{
-fitGlbin_CV(Q, dfmax = ncol(Q$X) * 1.1, lambda = NULL, lambda.min = 0.001,
-  nlambda = 100, log_linear_lambda = FALSE, verb = 0,
-  add_intercept = TRUE, quads = NULL, mc.cores = 3, sparse = FALSE,
-  use_glm_in_lmax = TRUE, ...)
+fitGlbin_CV(Q, dfmax = ncol(Q$X) * 1.1, lambda = NULL,
+  lambda.min = 0.001, nlambda = 100, log_linear_lambda = FALSE,
+  verb = 0, add_intercept = TRUE, quads = NULL, mc.cores = 3,
+  sparse = FALSE, use_glm_in_lmax = TRUE, ...)
 }
 \arguments{
 \item{Q}{Model object}

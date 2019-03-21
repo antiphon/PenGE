@@ -7,8 +7,9 @@
 fitGlbin3_CV(Q, dfmax = ncol(Q$X) * 1.1, lambda = NULL,
   lambda.min = 0.001, nlambda = 100, log_linear_lambda = FALSE,
   verb = 0, add_intercept = TRUE, quads = NULL, mc.cores = 3,
-  sparse = FALSE, orthonormalise = TRUE, standardize = !orthonormalise,
-  use_glm_in_lmax = TRUE, maxiter = 10000, ...)
+  sparse = FALSE, orthonormalise = TRUE,
+  standardize = !orthonormalise, use_glm_in_lmax = TRUE,
+  maxiter = 10000, ...)
 }
 \arguments{
 \item{Q}{Model object}

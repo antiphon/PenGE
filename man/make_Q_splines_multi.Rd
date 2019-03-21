@@ -5,10 +5,11 @@
 \title{Multivariate Spline Gibbs Model Pseudolikelihood Design Matrix Generation}
 \usage{
 make_Q_splines_multi(x, knots1, knots2, spline_order = 3, sat1 = 1,
-  sat2 = 1, sat1l = NULL, sat2l = NULL, auto_sat = TRUE, covariates,
-  penalise_covariates = TRUE, rho_factor = 4, rho_N = NULL,
-  dum_max = 10000, dum_min = 100, dummies = NULL, save_locations = TRUE,
-  ..., verb = FALSE, cov_noise_sd = 0, fatal_col0 = FALSE, border_r = 0)
+  sat2 = 1, sat1l = NULL, sat2l = NULL, auto_sat = TRUE,
+  covariates, penalise_covariates = TRUE, rho_factor = 4,
+  rho_N = NULL, dum_max = 10000, dum_min = 100, dummies = NULL,
+  save_locations = TRUE, ..., verb = FALSE, cov_noise_sd = 0,
+  fatal_col0 = FALSE, border_r = 0)
 }
 \arguments{
 \item{x}{Point pattern data, preferrably a ppp-object. Say of p-types.}

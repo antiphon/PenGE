@@ -59,6 +59,14 @@ eval_estimated_potential <- function(at, fit, k, i = 1, j = 1) {
     # compute
     out <- c(b,0)[s]
   }
+  else if(type == "genstepper") {
+    if(i == j) rmat <- Qp$ranges1[[ni]]
+    else rmat <- Qp$ranges2[[nij]]
+    # evaluate
+    V <- apply(rmat, 2, function(ab) c(0,1,0)[1+findInterval(at, ab)]   )
+    # compute weighted sum
+    out <- c(V %*% b )
+  }
   else if(type == "splines") {
     if(i == j) kn <- Qp$knots1[[ni]]
     else kn <- Qp$knots2[[nij]]

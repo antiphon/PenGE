@@ -25,8 +25,8 @@
 #' fits the CV-models as well. Here the mc.cores -parameter is used.
 #'
 #'
-#' @import looptimer glbinc3 parallel
-#' @export
+#' @import looptimer parallel
+# don't export, needs glbinc3
 
 fitGlbin3_CV <- function(Q,
                          dfmax = ncol(Q$X) * 1.1,

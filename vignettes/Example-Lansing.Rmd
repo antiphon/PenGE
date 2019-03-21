@@ -89,6 +89,7 @@ plot(fit$lambda, nnzero, xlim = rev(range(fit$lambda)), main ="number of non-zer
 As the penalty decreases (left to right in the figure), more and more coefficients are estimated to be non-zero (note the maximum count: 6 intra + 15 inter = 21 interaction). Choosing the right level is therefore of great importance. We can use cross validation to more objectively choose the penalty level.
 
 ### Cross validation
+
 For cross validation, we split the pattern spatially. In order to have truly spatially independent datasets, we need to use eroded windows to remove overlaps of neighbourhoods of points near the sub-window edges. This in turn leads to a loss of data: Points in the erosion zone, while contributing to other points' neighbourhoods, will not be directly included in the likelihood. 
 
 So, some loss of data is inevitable. Let's accept 50% loss. How many quadrats can we have, and how to split? For rectangular windows we can do the following: 

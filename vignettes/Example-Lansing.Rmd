@@ -78,7 +78,7 @@ M <- imatrix(fit, signed = TRUE)
 image.imatrix(M, col = c("red","black","green","blue"), cex.axis = 0.7, zlim = c(-1,2))
 ```
 
-This matrix shows estimated interactions between the types. Note however, that the matrix can be different for different levels of penalisation. The rule of thumb for selecting the penalty level is not very well justified. For illustration, lets compute the number of interactions per penalty level:
+This matrix shows estimated interactions between the types. Note however, that the matrix can be different for different levels of penalisation. The rule-of-thumb above for selecting the penalty level is not very well justified. For illustration, compute the number of interactions per penalty level:
 
 ```{r, fig.width = 6, fig.height=6}
 # remove the intercepts which are not penalised, and divide by number of ranges per interaction
@@ -160,9 +160,9 @@ The coding for the matrix is as follows when `signed=TRUE`:
 * +1 : At least one range scale coefficient is positive, and none are negative
 * +2 : At least one range scale coefficient is negative, and at least one range scale coefficient is positive
 
-If `signed=FALSE`, the matrix is binary with 1 if at least one rance scale coefficient is non-zero.
+If `signed=FALSE` is passed to the function`imatrix`, the resulting matrix is binary with 1 if at least one rance scale coefficient is non-zero.
 
-From the matrix we can see that most types are clustered (positive intra-interaction), and that maple is negatively associated with blackoak and hickory, for example.
+From the matrix we can see that most types are clustered (positive intra-interaction, diagonal elements), and that maple is negatively associated with blackoak and hickory, for example.
 
 ## Further options
 
@@ -175,14 +175,14 @@ By default, the model adapts the saturation levels automagically depending on th
 Q1 <- make_Q_stepper_multi(x=lansing, ranges1 = r1, ranges2 = r2, border_r = 0.05, sat1 = 1, sat2 = 1, auto_sat = FALSE)
 ```
 
-The saturation levels for inter-interaction between types 1 and 2:
+`sat1` referes to intra-components and `sat2` for inter-components. The saturation levels for inter-interaction between types 1 and 2:
 
 ```{r}
 print(Q$parameters$sat2[[1]])
 print( Q1$parameters$sat2[[1]] )
 ```
 
-This matrix is $k\times 2$, where $k$ is the length of the corresponding range-vector. The two column vectors are not equal, as the point count of type 2 ("hickory") is much larger than type 1 ("blackoak"). We have two saturation levels, one level per range interval. Recall
+This matrix is $k\times 2$, where $k$ is the length of the corresponding range-vector. The two column vectors of the automatically adjusted model are not equal, as the point count of type 2 ("hickory") is much larger than type 1 ("blackoak"). We have two saturation levels, one level per range interval. Recall
 
 ```{r}
 Q$parameters$ranges2[[1]]
@@ -217,8 +217,7 @@ Qc <- make_Q_stepper_multi(x=lansing, ranges1 = r1, ranges2 = r2, border_r = 0.0
 
 Note that we choose not to penalise the covariates. Group lasso shrinks the estimates, and if we penalise the covariates this might lead to problems in the residual estimation (=prediction). This needs to be studied further. 
 
-Then we proceed as before, with the expection that the covariates need to be given explicitly to `residuals_cv`:
-
+Then we proceed as before, with the addition that the covariates need to be given explicitly to `residuals_cv`:
 
 ```{r}
 cvfit_c <- fitGlbin_CV(Qc, quads = quads, mc.cores = MCORES)

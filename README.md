@@ -22,4 +22,4 @@ devtools::install_github("antiphon/PenGE", build_vignettes = TRUE)
 ```
 
 
-[paper] 
+[arXiv] 
